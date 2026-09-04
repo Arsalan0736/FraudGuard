@@ -12,13 +12,7 @@ export function fmtDate(iso) {
 }
 
 export function riskClass(score) {
-  if (score >= 75) return 'pill-high'
-  if (score >= 40) return 'pill-med'
-  return 'pill-low'
-}
-
-export function riskRowClass(score) {
-  if (score >= 75) return 'bg-rose-50'
-  if (score >= 40) return 'bg-amber-50'
-  return 'bg-emerald-50/40'
+  if (score >= 75) return 'risk-high'
+  if (score >= 40) return 'risk-med'
+  return 'risk-low'
 }

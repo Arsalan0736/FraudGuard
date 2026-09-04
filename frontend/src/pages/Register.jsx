@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
+import { IconShield } from '../components/Icon'
 
 export default function Register() {
   const [name, setName] = useState('')
@@ -25,32 +26,54 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-slate-100">
-      <form onSubmit={onSubmit} className="w-full max-w-sm bg-white rounded-xl shadow p-8 space-y-4">
-        <h1 className="text-lg font-semibold">Create an account</h1>
-        {error && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded px-3 py-2">{error}</div>}
+    <div className="min-h-screen grid place-items-center p-6 bg-slate-950">
+      <form onSubmit={onSubmit} className="w-full max-w-sm surface p-8 space-y-5">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-8 rounded-md bg-amber-500 text-slate-950 grid place-items-center">
+            <IconShield size={16} />
+          </div>
+          <div>
+            <div className="font-bold tracking-tight">FraudGuard</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">New account</div>
+          </div>
+        </div>
+        <h1 className="text-xl font-semibold text-slate-100">Create an account</h1>
+
+        {error && (
+          <div role="alert"
+               className="text-sm text-rose-200 bg-rose-500/10 border border-rose-500/30 rounded-md px-3 py-2">
+            {error}
+          </div>
+        )}
+
         <div>
-          <label className="label">Name</label>
-          <input className="input" required value={name} onChange={(e) => setName(e.target.value)} />
+          <label className="label" htmlFor="name">Name</label>
+          <input id="name" className="input" required value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
-          <label className="label">Email</label>
-          <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <label className="label" htmlFor="email">Email</label>
+          <input id="email" className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
         <div>
-          <label className="label">Password</label>
-          <input className="input" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <label className="label" htmlFor="password">Password</label>
+          <input id="password" className="input" type="password" required minLength={6}
+                 value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
         <div>
-          <label className="label">Role</label>
-          <select className="input" value={role} onChange={(e) => setRole(e.target.value)}>
+          <label className="label" htmlFor="role">Role</label>
+          <select id="role" className="input" value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="analyst">analyst</option>
             <option value="admin">admin</option>
           </select>
         </div>
-        <button className="btn-primary w-full" disabled={busy}>{busy ? 'Creating…' : 'Create account'}</button>
-        <p className="text-sm text-slate-600 text-center">
-          Already registered? <Link to="/login" className="text-brand-700 hover:underline">Sign in</Link>
+
+        <button className="btn-primary w-full" disabled={busy}>
+          {busy ? 'Creating' : 'Create account'}
+        </button>
+
+        <p className="text-sm text-slate-400 text-center">
+          Already registered?{' '}
+          <Link to="/login" className="text-amber-400 hover:text-amber-300">Sign in</Link>
         </p>
       </form>
     </div>
