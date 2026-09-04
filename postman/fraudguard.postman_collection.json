@@ -1,0 +1,384 @@
+{
+  "info": {
+    "name": "FraudGuard API",
+    "description": "REST API collection for the FraudGuard fraud-detection dashboard. Backend: Flask on :5000. JWT-based auth (Bearer token). Each endpoint has at least one success case and one failure case (invalid auth, missing field, or not-found).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "fraudguard-collection-0001"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "token", "value": "" },
+    { "key": "transactionId", "value": "1" },
+    { "key": "alertId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register (success)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Smoke Analyst\",\n  \"email\": \"smoke@fraudguard.dev\",\n  \"password\": \"password123\",\n  \"role\": \"analyst\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('201 created', () => pm.response.to.have.status(201));",
+                "const j = pm.response.json();",
+                "if (j.token) pm.collectionVariables.set('token', j.token);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Register (failure: missing fields)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"x@y.z\"\n}" }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('400 missing fields', () => pm.response.to.have.status(400));"]
+            }
+          }]
+        },
+        {
+          "name": "Login (success)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"smoke@fraudguard.dev\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('200 ok', () => pm.response.to.have.status(200));",
+                "const j = pm.response.json();",
+                "if (j.token) pm.collectionVariables.set('token', j.token);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Login (failure: wrong password)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"smoke@fraudguard.dev\",\n  \"password\": \"wrong-password\"\n}" }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('401 invalid credentials', () => pm.response.to.have.status(401));"]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "List (success)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?page=1&per_page=25&status=flagged",
+              "host": ["{{baseUrl}}"], "path": ["api", "transactions"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "25"},
+                {"key": "status", "value": "flagged"}
+              ]
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('200 ok', () => pm.response.to.have.status(200));",
+                "const j = pm.response.json();",
+                "if (j.items && j.items.length) pm.collectionVariables.set('transactionId', j.items[0].id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "List (failure: no auth)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/transactions", "host": ["{{baseUrl}}"], "path": ["api", "transactions"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('401 missing token', () => pm.response.to.have.status(401));"]
+            }
+          }]
+        },
+        {
+          "name": "Detail (success)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": { "raw": "{{baseUrl}}/api/transactions/{{transactionId}}", "host": ["{{baseUrl}}"], "path": ["api", "transactions", "{{transactionId}}"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('200 ok', () => pm.response.to.have.status(200));"]
+            }
+          }]
+        },
+        {
+          "name": "Detail (failure: not found)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": { "raw": "{{baseUrl}}/api/transactions/9999999", "host": ["{{baseUrl}}"], "path": ["api", "transactions", "9999999"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('404 not found', () => pm.response.to.have.status(404));"]
+            }
+          }]
+        },
+        {
+          "name": "Create (success)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "url": { "raw": "{{baseUrl}}/api/transactions", "host": ["{{baseUrl}}"], "path": ["api", "transactions"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"account_id\": 1,\n  \"amount\": 4500.00,\n  \"merchant\": \"Best Buy\",\n  \"category\": \"electronics\",\n  \"latitude\": 35.6762,\n  \"longitude\": 139.6503,\n  \"location\": \"Tokyo, JP\",\n  \"timestamp\": \"2026-09-04T03:30:00\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('201 created', () => pm.response.to.have.status(201));",
+                "const j = pm.response.json();",
+                "if (j.transaction) pm.collectionVariables.set('transactionId', j.transaction.id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Create (failure: missing fields)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "url": { "raw": "{{baseUrl}}/api/transactions", "host": ["{{baseUrl}}"], "path": ["api", "transactions"] },
+            "body": { "mode": "raw", "raw": "{\n  \"account_id\": 1\n}" }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('400 missing fields', () => pm.response.to.have.status(400));"]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "Alerts",
+      "item": [
+        {
+          "name": "List (success)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts?page=1&per_page=25&review_status=pending",
+              "host": ["{{baseUrl}}"], "path": ["api", "alerts"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "25"},
+                {"key": "review_status", "value": "pending"}
+              ]
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('200 ok', () => pm.response.to.have.status(200));",
+                "const j = pm.response.json();",
+                "if (j.items && j.items.length) pm.collectionVariables.set('alertId', j.items[0].id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "List (failure: no auth)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/alerts", "host": ["{{baseUrl}}"], "path": ["api", "alerts"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('401 missing token', () => pm.response.to.have.status(401));"]
+            }
+          }]
+        },
+        {
+          "name": "Patch (success: confirmed_fraud)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "url": { "raw": "{{baseUrl}}/api/alerts/{{alertId}}", "host": ["{{baseUrl}}"], "path": ["api", "alerts", "{{alertId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"review_status\": \"confirmed_fraud\"\n}" }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('200 ok', () => pm.response.to.have.status(200));"]
+            }
+          }]
+        },
+        {
+          "name": "Patch (failure: invalid status)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "url": { "raw": "{{baseUrl}}/api/alerts/{{alertId}}", "host": ["{{baseUrl}}"], "path": ["api", "alerts", "{{alertId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"review_status\": \"not_a_real_status\"\n}" }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('400 bad review_status', () => pm.response.to.have.status(400));"]
+            }
+          }]
+        },
+        {
+          "name": "Patch (failure: not found)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "url": { "raw": "{{baseUrl}}/api/alerts/9999999", "host": ["{{baseUrl}}"], "path": ["api", "alerts", "9999999"] },
+            "body": { "mode": "raw", "raw": "{\n  \"review_status\": \"confirmed_fraud\"\n}" }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('404 not found', () => pm.response.to.have.status(404));"]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Summary (success)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": { "raw": "{{baseUrl}}/api/analytics/summary", "host": ["{{baseUrl}}"], "path": ["api", "analytics", "summary"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('200 ok', () => pm.response.to.have.status(200));",
+                "const j = pm.response.json();",
+                "pm.test('has daily_series', () => pm.expect(j).to.have.property('daily_series'));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Summary (failure: no auth)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/analytics/summary", "host": ["{{baseUrl}}"], "path": ["api", "analytics", "summary"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('401 missing token', () => pm.response.to.have.status(401));"]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/health", "host": ["{{baseUrl}}"], "path": ["api", "health"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('200 ok', () => pm.response.to.have.status(200));"]
+            }
+          }]
+        }
+      ]
+    }
+  ]
+}
